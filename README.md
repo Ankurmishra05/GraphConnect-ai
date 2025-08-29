@@ -1,7 +1,5 @@
 # 🚀 GraphConnect AI
 
-**Live Demo:** https://graphconnect-ai.onrender.com
-
 ## 📊 Marvel Universe Social Network Analysis
 
 A Flask web application that analyzes character relationships using graph theory and AI.
