@@ -1,15 +1,34 @@
-# GraphConnect AI
+# 🚀 GraphConnect AI
 
-A Flask web application that analyzes the Marvel Universe social network using graph theory and AI.
+**Live Demo:** https://graphconnect-ai.onrender.com
 
-## Features
-- Network analysis of 19,000+ Marvel characters
-- Centrality metrics (Degree, PageRank, Eigenvector)
+## 📊 Marvel Universe Social Network Analysis
+
+A Flask web application that analyzes character relationships using graph theory and AI.
+
+## 🎯 Features
+- Real-time character search
+- Network centrality metrics
 - Community detection
-- Connection recommendations
 - Interactive dashboard
+- Connection recommendations
 
-## Local Development
+## 🛠️ Technology Stack
+- **Backend:** Python + Flask
+- **Graph Analysis:** NetworkX
+- **Frontend:** HTML, CSS, Bootstrap
+- **Deployment:** Render.com
+- **Version Control:** GitHub
+
+## 📦 Local Development
+
 ```bash
+# Clone repository
+git clone https://github.com/ankurmishra05/graphconnect-ai.git
+cd graphconnect-ai
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Run locally
 python app.py
