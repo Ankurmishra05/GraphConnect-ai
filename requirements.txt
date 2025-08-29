@@ -1,7 +1,6 @@
-flask==2.3.3
+# Remove the current requirements.txt
+# Create a new lighter version
+echo "flask==2.3.3
 networkx==3.1
-pandas==2.0.3
-matplotlib==3.7.2
-plotly==5.15.0
 gunicorn==21.2.0
-python-dotenv==1.0.0
+python-dotenv==1.0.0" > requirements.txt
