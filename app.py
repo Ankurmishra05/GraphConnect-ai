@@ -4,46 +4,33 @@ import pandas as pd
 import pickle
 import json
 from datetime import datetime
+import os
 
-app = Flask(__name__)
+app = Flask(__name__, 
+           static_folder='static',
+           template_folder='templates')
 
-# Load pre-processed graph data
-def load_graph_data():
-    """Load the Marvel graph and pre-computed metrics"""
-    try:
-        with open('data/marvel_network.pkl', 'rb') as f:
-            graph_data = pickle.load(f)
-        return graph_data
-    except:
-        # Fallback: create from scratch (for first run)
-        print("Pre-processing graph data...")
-        import kagglehub
-        import os
-        
-        dataset_path = kagglehub.dataset_download("csanhueza/the-marvel-universe-social-network")
-        edges_file_path = os.path.join(dataset_path, "edges.csv")
-        edges_df = pd.read_csv(edges_file_path, header=None, names=['source', 'target'])
-        
-        G = nx.from_pandas_edgelist(edges_df, source='source', target='target')
-        
-        # Precompute metrics for performance
-        graph_data = {
-            'graph': G,
-            'degree_centrality': nx.degree_centrality(G),
-            'pagerank': nx.pagerank(G),
-            'communities': list(nx.community.greedy_modularity_communities(G)),
-            'last_updated': datetime.now()
-        }
-        
-        # Save for future use
-        with open('data/marvel_network.pkl', 'wb') as f:
-            pickle.dump(graph_data, f)
-            
-        return graph_data
+# For GitHub deployment, we'll use a simpler approach
+def create_sample_graph():
+    """Create a sample graph for demonstration"""
+    G = nx.Graph()
+    
+    # Sample Marvel data (for demo purposes)
+    sample_data = {
+        'SPIDER-MAN/PETER PARKER': ['CAPTAIN AMERICA', 'IRON MAN/TONY STARK', 'HULK/DR. ROBERT BRUC'],
+        'CAPTAIN AMERICA': ['IRON MAN/TONY STARK', 'THOR/DR. DONALD BLAK', 'BLACK WIDOW/NATASHA'],
+        'IRON MAN/TONY STARK': ['WAR MACHINE/JAMES R.', 'SPIDER-MAN/PETER PARKER'],
+        'WOLVERINE/LOGAN': ['PROFESSOR X', 'STORM/ORORO MUNROE']
+    }
+    
+    for character, connections in sample_data.items():
+        for connection in connections:
+            G.add_edge(character, connection)
+    
+    return G
 
-# Load data
-graph_data = load_graph_data()
-G = graph_data['graph']
+# Use sample data for GitHub deployment
+G = create_sample_graph()
 
 @app.route('/')
 def index():
@@ -52,55 +39,10 @@ def index():
         'total_characters': G.number_of_nodes(),
         'total_relationships': G.number_of_edges(),
         'network_density': f"{nx.density(G):.6f}",
-        'last_updated': graph_data['last_updated'].strftime('%Y-%m-%d %H:%M:%S')
+        'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
     
-    # Top characters for dashboard
-    top_chars = sorted(graph_data['degree_centrality'].items(), 
-                      key=lambda x: x[1], reverse=True)[:10]
-    
-    return render_template('index.html', 
-                         network_stats=network_stats,
-                         top_characters=top_chars)
-
-@app.route('/api/character/<name>')
-def get_character_data(name):
-    """API endpoint for character data"""
-    if name not in G:
-        return jsonify({'error': 'Character not found'}), 404
-    
-    character_data = {
-        'name': name,
-        'degree_centrality': graph_data['degree_centrality'].get(name, 0),
-        'pagerank': graph_data['pagerank'].get(name, 0),
-        'connections': G.degree(name),
-        'neighbors': list(G.neighbors(name))[:20],  # First 20 neighbors
-        'community': next((i for i, comm in enumerate(graph_data['communities']) 
-                          if name in comm), -1)
-    }
-    
-    return jsonify(character_data)
-
-@app.route('/api/recommendations/<name>')
-def get_recommendations(name):
-    """API for connection recommendations"""
-    from networkx.algorithms import link_prediction
-    
-    if name not in G:
-        return jsonify({'error': 'Character not found'}), 404
-    
-    recommendations = []
-    for other_char in list(G.nodes())[:100]:  # Sample for performance
-        if other_char != name and not G.has_edge(name, other_char):
-            try:
-                score = list(link_prediction.resource_allocation_index(
-                    G, [(name, other_char)]))[0][2]
-                recommendations.append({'character': other_char, 'score': score})
-            except:
-                continue
-    
-    recommendations.sort(key=lambda x: x['score'], reverse=True)
-    return jsonify(recommendations[:10])
+    return render_template('index.html', network_stats=network_stats)
 
 @app.route('/api/network-stats')
 def network_stats():
@@ -109,13 +51,9 @@ def network_stats():
         'nodes': G.number_of_nodes(),
         'edges': G.number_of_edges(),
         'density': nx.density(G),
-        'average_degree': sum(dict(G.degree()).values()) / G.number_of_nodes()
+        'status': 'success'
     })
 
-@app.route('/character/<name>')
-def character_detail(name):
-    """Character detail page"""
-    return render_template('character.html', character_name=name)
-
 if __name__ == '__main__':
+    # For local development
     app.run(debug=True, host='0.0.0.0', port=5000)
