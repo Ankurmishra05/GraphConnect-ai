@@ -1,47 +1,42 @@
 from flask import Flask, render_template, jsonify
 import networkx as nx
-import json
 from datetime import datetime
 
 app = Flask(__name__)
 
-# Create a sample graph (lightweight for production)
-def create_sample_graph():
-    """Create a lightweight sample graph for production"""
+# Lightweight sample data for production
+def create_marvel_graph():
     G = nx.Graph()
     
-    # Sample Marvel data (optimized for production)
-    sample_characters = {
-        'SPIDER-MAN': ['IRON MAN', 'CAPTAIN AMERICA', 'HULK'],
-        'CAPTAIN AMERICA': ['IRON MAN', 'THOR', 'BLACK WIDOW'],
-        'IRON MAN': ['WAR MACHINE', 'SPIDER-MAN'],
-        'WOLVERINE': ['PROFESSOR X', 'STORM']
+    # Core Marvel characters and connections
+    characters = {
+        'SPIDER-MAN': ['IRON MAN', 'CAPTAIN AMERICA', 'HULK', 'BLACK WIDOW'],
+        'CAPTAIN AMERICA': ['IRON MAN', 'THOR', 'BLACK WIDOW', 'HAWKEYE'],
+        'IRON MAN': ['WAR MACHINE', 'SPIDER-MAN', 'CAPTAIN AMERICA'],
+        'WOLVERINE': ['PROFESSOR X', 'STORM', 'CYCLOPS'],
+        'THOR': ['CAPTAIN AMERICA', 'LOKI', 'HEIMDALL']
     }
     
-    for character, connections in sample_characters.items():
+    for character, connections in characters.items():
         for connection in connections:
             G.add_edge(character, connection)
     
     return G
 
-# Initialize graph
-G = create_sample_graph()
+G = create_marvel_graph()
 
 @app.route('/')
-def index():
-    """Main dashboard page"""
-    network_stats = {
+def home():
+    stats = {
         'total_characters': G.number_of_nodes(),
-        'total_relationships': G.number_of_edges(),
+        'total_relationships': G.number_of_edges(), 
         'network_density': f"{nx.density(G):.6f}",
         'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
-    
-    return render_template('index.html', network_stats=network_stats)
+    return render_template('index.html', network_stats=stats)
 
-@app.route('/api/network-stats')
-def network_stats():
-    """API for network statistics"""
+@app.route('/api/stats')
+def api_stats():
     return jsonify({
         'nodes': G.number_of_nodes(),
         'edges': G.number_of_edges(),
@@ -50,18 +45,17 @@ def network_stats():
     })
 
 @app.route('/api/character/<name>')
-def get_character_data(name):
-    """API for character data"""
-    name_upper = name.upper()
+def character_api(name):
+    name_upper = name.upper().replace('-', ' ')
     
     if name_upper not in G:
-        return jsonify({'error': 'Character not found'}), 404
+        return jsonify({'error': 'Character not found. Try: SPIDER-MAN, CAPTAIN AMERICA, IRON MAN'}), 404
     
     return jsonify({
         'name': name_upper,
         'connections': G.degree(name_upper),
-        'neighbors': list(G.neighbors(name_upper)),
-        'centrality': round(nx.degree_centrality(G).get(name_upper, 0), 6)
+        'centrality': round(nx.degree_centrality(G).get(name_upper, 0), 4),
+        'neighbors': list(G.neighbors(name_upper))
     })
 
 if __name__ == '__main__':
