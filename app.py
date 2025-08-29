@@ -1,35 +1,30 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify
 import networkx as nx
-import pandas as pd
-import pickle
 import json
 from datetime import datetime
-import os
 
-app = Flask(__name__, 
-           static_folder='static',
-           template_folder='templates')
+app = Flask(__name__)
 
-# For GitHub deployment, we'll use a simpler approach
+# Create a sample graph (lightweight for production)
 def create_sample_graph():
-    """Create a sample graph for demonstration"""
+    """Create a lightweight sample graph for production"""
     G = nx.Graph()
     
-    # Sample Marvel data (for demo purposes)
-    sample_data = {
-        'SPIDER-MAN/PETER PARKER': ['CAPTAIN AMERICA', 'IRON MAN/TONY STARK', 'HULK/DR. ROBERT BRUC'],
-        'CAPTAIN AMERICA': ['IRON MAN/TONY STARK', 'THOR/DR. DONALD BLAK', 'BLACK WIDOW/NATASHA'],
-        'IRON MAN/TONY STARK': ['WAR MACHINE/JAMES R.', 'SPIDER-MAN/PETER PARKER'],
-        'WOLVERINE/LOGAN': ['PROFESSOR X', 'STORM/ORORO MUNROE']
+    # Sample Marvel data (optimized for production)
+    sample_characters = {
+        'SPIDER-MAN': ['IRON MAN', 'CAPTAIN AMERICA', 'HULK'],
+        'CAPTAIN AMERICA': ['IRON MAN', 'THOR', 'BLACK WIDOW'],
+        'IRON MAN': ['WAR MACHINE', 'SPIDER-MAN'],
+        'WOLVERINE': ['PROFESSOR X', 'STORM']
     }
     
-    for character, connections in sample_data.items():
+    for character, connections in sample_characters.items():
         for connection in connections:
             G.add_edge(character, connection)
     
     return G
 
-# Use sample data for GitHub deployment
+# Initialize graph
 G = create_sample_graph()
 
 @app.route('/')
@@ -54,6 +49,20 @@ def network_stats():
         'status': 'success'
     })
 
+@app.route('/api/character/<name>')
+def get_character_data(name):
+    """API for character data"""
+    name_upper = name.upper()
+    
+    if name_upper not in G:
+        return jsonify({'error': 'Character not found'}), 404
+    
+    return jsonify({
+        'name': name_upper,
+        'connections': G.degree(name_upper),
+        'neighbors': list(G.neighbors(name_upper)),
+        'centrality': round(nx.degree_centrality(G).get(name_upper, 0), 6)
+    })
+
 if __name__ == '__main__':
-    # For local development
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5000)
